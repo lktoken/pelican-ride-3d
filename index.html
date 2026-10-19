@@ -5,79 +5,145 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <title>鹈鹕骑士 · Pelican Ride 3D</title>
 <meta name="description" content="一只鹈鹕骑自行车的 3D 交互场景：Three.js 全程序化生成，无任何外部素材。"/>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='none' stroke='%23cf3f36' stroke-width='10'/%3E%3Ccircle cx='50' cy='50' r='8' fill='%23cf3f36'/%3E%3C/svg%3E"/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='none' stroke='%23e8663c' stroke-width='10'/%3E%3Ccircle cx='50' cy='50' r='8' fill='%23e8663c'/%3E%3C/svg%3E"/>
+<link rel="preload" href="./fonts/baloo2-600.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="preload" href="./fonts/baloo2-800.woff2" as="font" type="font/woff2" crossorigin/>
 <style>
+  @font-face{
+    font-family: "Baloo 2";
+    src: url("./fonts/baloo2-600.woff2") format("woff2");
+    font-weight: 600; font-style: normal; font-display: swap;
+  }
+  @font-face{
+    font-family: "Baloo 2";
+    src: url("./fonts/baloo2-800.woff2") format("woff2");
+    font-weight: 700 900; font-style: normal; font-display: swap;
+  }
   :root{
-    --glass: rgba(255,255,255,.13);
-    --stroke: rgba(255,255,255,.32);
+    --glass: rgba(255,244,226,.14);
+    --stroke: rgba(255,236,200,.34);
+    --gold: #ffd166;
+    --ink: #fff6e8;
   }
   *{ box-sizing: border-box; }
   html, body{
-    margin: 0; height: 100%; overflow: hidden; background: #0a1020; color: #fff;
-    font-family: ui-rounded, -apple-system, "SF Pro Rounded", "PingFang SC", "Hiragino Sans GB", "Segoe UI", system-ui, sans-serif;
+    margin: 0; height: 100%; overflow: hidden; background: #141a2c; color: var(--ink);
+    font-family: "Baloo 2", ui-rounded, -apple-system, "SF Pro Rounded", "PingFang SC", "Hiragino Sans GB", "Segoe UI", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
   }
   #gl{ position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
   #gl:active{ cursor: grabbing; }
   .vignette{
     position: fixed; inset: 0; pointer-events: none; z-index: 5;
-    background: radial-gradient(120% 90% at 50% 42%, transparent 58%, rgba(4,9,24,.42) 100%);
+    background: radial-gradient(125% 95% at 52% 40%, transparent 55%, rgba(46,17,4,.4) 100%);
   }
-  .hud{ position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+  .hud{ position: fixed; inset: 0; pointer-events: none; z-index: 10; transition: opacity .5s ease; }
+  body.photo .hud{ opacity: 0; pointer-events: none; }
+  body.photo .vignette{ background: radial-gradient(130% 100% at 52% 40%, transparent 68%, rgba(46,17,4,.25) 100%); }
   .hud > *{ pointer-events: auto; }
+  body.photo .hud > *{ pointer-events: none; }
 
   .title-block{
-    position: absolute; top: calc(16px + env(safe-area-inset-top)); left: 20px;
-    text-shadow: 0 2px 20px rgba(8,15,40,.45); user-select: none;
+    position: absolute; top: calc(16px + env(safe-area-inset-top)); left: 22px;
+    text-shadow: 0 2px 22px rgba(30,10,0,.5); user-select: none;
   }
-  .title-block h1{ margin: 0; font-size: clamp(20px, 3.2vw, 30px); font-weight: 800; letter-spacing: .04em; }
-  .title-block p{ margin: 4px 0 0; font-size: 12px; letter-spacing: .28em; opacity: .78; text-transform: uppercase; }
+  .title-block h1{
+    margin: 0; font-size: clamp(22px, 3.4vw, 34px); font-weight: 800; letter-spacing: .05em;
+    background: linear-gradient(180deg, #fff8ea 20%, #ffd9a0 75%, #ffb45e 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 2px 14px rgba(50,18,0,.45));
+  }
+  .title-block p{
+    margin: 2px 0 0; font-size: 11.5px; letter-spacing: .3em; opacity: .8;
+    text-transform: uppercase; font-weight: 600;
+  }
 
   .top-right{
     position: absolute; top: calc(16px + env(safe-area-inset-top)); right: 20px;
     display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;
   }
   .pill{
-    appearance: none; border: 1px solid var(--stroke); color: #fff; background: var(--glass);
+    appearance: none; border: 1px solid var(--stroke); color: var(--ink); background: var(--glass);
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    border-radius: 999px; padding: 9px 16px; font-size: 13px; font-weight: 600;
-    font-family: inherit; cursor: pointer; transition: background .2s, transform .12s;
-    text-shadow: 0 1px 8px rgba(8,15,40,.3);
+    border-radius: 999px; padding: 9px 16px 9px 13px; font-size: 13.5px; font-weight: 600;
+    font-family: inherit; cursor: pointer; transition: background .2s, transform .12s, border-color .2s;
+    text-shadow: 0 1px 8px rgba(30,10,0,.35);
+    display: inline-flex; align-items: center; gap: 7px;
   }
-  .pill:hover{ background: rgba(255,255,255,.28); }
+  .pill::before{
+    content: ""; width: 15px; height: 15px; flex: none;
+    background: currentColor;
+    -webkit-mask: var(--ico) center / contain no-repeat; mask: var(--ico) center / contain no-repeat;
+  }
+  .pill:hover{ background: rgba(255,236,200,.3); border-color: rgba(255,220,160,.6); }
   .pill:active{ transform: scale(.96); }
+  #btnNight{ --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z'/%3E%3C/svg%3E"); }
+  #btnDing{ --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9'/%3E%3Cpath d='M13.7 21a2 2 0 0 1-3.4 0'/%3E%3C/svg%3E"); }
+  #btnCam{ --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M23 19V8a2 2 0 0 0-2-2h-4l-2-3h-6L7 6H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h17a2 2 0 0 0 2-2Z'/%3E%3Ccircle cx='12' cy='13' r='4'/%3E%3C/svg%3E"); }
 
   .dock{
-    position: absolute; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom));
+    position: absolute; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom));
     transform: translateX(-50%);
-    display: flex; align-items: center; gap: 14px;
-    padding: 10px 18px; border-radius: 999px;
+    display: flex; align-items: center; gap: 18px;
+    padding: 12px 20px 12px 14px; border-radius: 26px;
     background: var(--glass); border: 1px solid var(--stroke);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 10px 30px rgba(5,10,30,.25);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 12px 34px rgba(24,8,0,.3);
   }
-  .dock label{ font-size: 11px; letter-spacing: .18em; opacity: .85; white-space: nowrap; font-weight: 700; }
-  .dock input[type=range]{ width: clamp(120px, 26vw, 260px); accent-color: #ffd166; cursor: pointer; }
-  .dock output{ font-size: 12px; font-weight: 700; min-width: 44px; text-align: right; font-variant-numeric: tabular-nums; }
+  .gauge{
+    position: relative; width: 92px; height: 92px; flex: none;
+  }
+  .gauge svg{ position: absolute; inset: 0; width: 100%; height: 100%; }
+  .gauge .needle{
+    position: absolute; left: 50%; top: 50%; width: 3.5px; height: 33px;
+    margin-left: -1.75px; margin-top: -33px; border-radius: 3px;
+    background: linear-gradient(180deg, #ffe9b0, #ff9a3c 70%, #f2703c);
+    transform-origin: 50% calc(100% - 1.5px);
+    transform: rotate(-120deg);
+    box-shadow: 0 0 8px rgba(255,170,90,.7);
+    transition: transform .08s linear;
+  }
+  .gauge .hubcap{
+    position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px;
+    border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff4d8, #d98a3c);
+    box-shadow: 0 0 8px rgba(255,190,110,.8);
+  }
+  .gauge .readout{
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding-top: 14px; pointer-events: none;
+  }
+  .gauge output{
+    font-size: 21px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1;
+    text-shadow: 0 1px 8px rgba(30,10,0,.5);
+  }
+  .gauge .unit{ font-size: 8.5px; letter-spacing: .22em; opacity: .7; margin-top: 3px; font-weight: 600; }
+
+  .dock-ctl{ display: flex; flex-direction: column; gap: 6px; min-width: 150px; }
+  .dock-ctl label{ font-size: 10.5px; letter-spacing: .2em; opacity: .85; font-weight: 700; }
+  .dock-ctl input[type=range]{ width: clamp(130px, 24vw, 250px); accent-color: var(--gold); cursor: pointer; }
 
   .hint{
     position: absolute; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom));
-    font-size: 11.5px; line-height: 1.9; opacity: .72; text-align: right;
-    text-shadow: 0 1px 10px rgba(8,15,40,.5); user-select: none; max-width: 260px;
+    font-size: 11.5px; line-height: 2; opacity: .75; text-align: right; font-weight: 600;
+    text-shadow: 0 1px 10px rgba(30,10,0,.55); user-select: none; max-width: 270px;
   }
+  .hint b{ color: var(--gold); font-weight: 700; }
 
   #loader{
     position: fixed; inset: 0; z-index: 50; display: grid; place-items: center;
-    background: linear-gradient(180deg, #2e6fd6 0%, #7db2ec 55%, #cfe9ff 100%);
+    background: linear-gradient(180deg, #2c5fae 0%, #8a6fb0 34%, #f0955c 68%, #ffd9a4 100%);
     transition: opacity .9s ease, visibility .9s;
   }
   #loader.done{ opacity: 0; visibility: hidden; }
-  .loader-card{ text-align: center; text-shadow: 0 2px 18px rgba(10,25,60,.35); }
-  .loader-card h2{ margin: 0; font-size: clamp(26px, 5vw, 44px); font-weight: 800; letter-spacing: .08em; }
-  .loader-card p{ margin: 10px 0 0; font-size: 13px; letter-spacing: .32em; opacity: .85; }
+  .loader-card{ text-align: center; text-shadow: 0 2px 18px rgba(60,20,0,.4); }
+  .loader-card h2{
+    margin: 0; font-size: clamp(28px, 5.4vw, 48px); font-weight: 800; letter-spacing: .1em;
+    color: #fff8ea;
+  }
+  .loader-card p{ margin: 10px 0 0; font-size: 12.5px; letter-spacing: .34em; opacity: .9; font-weight: 600; }
   .spinner{
-    width: 44px; height: 44px; margin: 22px auto 0; border-radius: 50%;
-    border: 4px solid rgba(255,255,255,.35); border-top-color: #fff;
+    width: 46px; height: 46px; margin: 24px auto 0; border-radius: 50%;
+    border: 4px solid rgba(255,240,210,.35); border-top-color: #ffe9b0;
     animation: spin 1s linear infinite;
   }
   @keyframes spin{ to{ transform: rotate(360deg); } }
@@ -90,8 +156,20 @@
 
   @media (max-width: 720px){
     .hint{ display: none; }
-    .title-block p{ letter-spacing: .18em; }
-    .dock{ gap: 10px; padding: 9px 14px; }
+    .title-block{ left: 16px; }
+    .title-block h1{ font-size: 22px; }
+    .title-block p{ letter-spacing: .16em; font-size: 10px; }
+    .top-right{
+      top: auto; right: 12px;
+      bottom: calc(132px + env(safe-area-inset-bottom));
+      flex-direction: column; align-items: flex-end; gap: 7px;
+    }
+    .pill{ padding: 7px 12px 7px 10px; font-size: 12.5px; }
+    .dock{ gap: 12px; padding: 10px 14px; }
+    .gauge{ width: 76px; height: 76px; }
+    .gauge .needle{ height: 27px; margin-top: -27px; }
+    .dock-ctl{ min-width: 110px; }
+    .dock-ctl input[type=range]{ width: clamp(100px, 30vw, 160px); }
   }
 </style>
 </head>
@@ -99,7 +177,7 @@
 <canvas id="gl"></canvas>
 <div class="vignette"></div>
 
-<div class="hud">
+<div class="hud" id="hud">
   <div class="title-block">
     <h1>鹈鹕骑士</h1>
     <p>Pelican &middot; 3D Bicycle Ride</p>
@@ -110,13 +188,35 @@
     <button class="pill" id="btnCam" aria-label="切换视角">视角：环绕</button>
   </div>
   <div class="dock">
-    <label for="speed">踩踏动力</label>
-    <input id="speed" type="range" min="0" max="8" step="0.1" value="3.2"/>
-    <output id="speedVal">3.2</output>
+    <div class="gauge" aria-hidden="true">
+      <svg viewBox="0 0 100 100">
+        <defs>
+          <linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#ffe9b0"/>
+            <stop offset="1" stop-color="#ff9a3c"/>
+          </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,240,214,.18)" stroke-width="7"
+          stroke-dasharray="175.9 263.9" stroke-linecap="round" transform="rotate(150 50 50)"/>
+        <circle cx="50" cy="50" r="42" fill="none" stroke="url(#arcGrad)" stroke-width="7" opacity=".9"
+          stroke-dasharray="175.9 263.9" stroke-linecap="round" transform="rotate(150 50 50)"
+          stroke-dashoffset="0"/>
+      </svg>
+      <div class="needle" id="needle"></div>
+      <div class="hubcap"></div>
+      <div class="readout">
+        <output id="speedVal">3.2</output>
+        <span class="unit">KM/H</span>
+      </div>
+    </div>
+    <div class="dock-ctl">
+      <label for="speed">踩踏动力 · PEDAL</label>
+      <input id="speed" type="range" min="0" max="8" step="0.1" value="3.2" aria-label="调节速度"/>
+    </div>
   </div>
   <div class="hint">
     拖拽旋转 · 滚轮缩放 · 点击画面撒羽毛<br/>
-    ↑↓ 车速 &nbsp; B 车铃 &nbsp; N 昼夜 &nbsp; C 视角
+    <b>↑↓</b> 车速 &nbsp; <b>B</b> 车铃 &nbsp; <b>N</b> 昼夜 &nbsp; <b>C</b> 视角 &nbsp; <b>H</b> 拍照
   </div>
 </div>
 
