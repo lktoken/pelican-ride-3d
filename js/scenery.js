@@ -91,8 +91,9 @@ export function buildScenery(scene, anisotropy) {
           vec4 mvPosition = vec4(transformed, 1.0);
           #ifdef USE_INSTANCING
             mvPosition = instanceMatrix * mvPosition;
+            float gx = instanceMatrix[3][0];
+            mvPosition.x += mod(gx + uShift + 42.0, 84.0) - 42.0 - gx;
           #endif
-          mvPosition.x = mod(mvPosition.x + uShift + 42.0, 84.0) - 42.0;
           float gph = mvPosition.x * 1.31 + mvPosition.z * 2.17;
           float gbend = smoothstep(0.0, 0.34, position.y);
           mvPosition.x += (sin(uTime * 1.7 + gph) * 0.6 + sin(uTime * 3.2 + gph * 1.9) * 0.4) * 0.055 * gbend;
